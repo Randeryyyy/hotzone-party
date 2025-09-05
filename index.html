@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hotzone Party — v4</title>
+  <style>
+    :root{
+      --bg:#0b1020; --panel:#121937; --accent:#6f6bff; --accent2:#ff3e8a; --text:#e8ebff; --muted:#9aa2c7;
+      --blue:#6f6bff; --red:#ff3e8a; --good:#32d47a; --warn:#ffb020;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;background:linear-gradient(180deg,#0b1020 0%,#0d1330 100%);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,'Noto Sans');}
+    a{color:#9dd4ff}
+    .container{max-width:1200px;margin:0 auto;padding:16px}
+    .header{display:flex;align-items:center;gap:12px;justify-content:space-between;margin-bottom:12px}
+    .title{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.3px}
+    .pill{padding:6px 10px;border-radius:999px;background:#162154;color:var(--muted);font-size:12px}
+    .grid{display:grid;grid-template-columns:260px 1fr 260px;gap:12px}
+    .card{background:radial-gradient(1200px 400px at -100px -100px, rgba(111,107,255,.15), transparent),
+                  radial-gradient(1200px 400px at 100% 0, rgba(255,62,138,.08), transparent),
+                  var(--panel);border:1px solid #243065;border-radius:16px;padding:14px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+    .team{display:flex;flex-direction:column;gap:10px}
+    .team h3{margin:0 0 6px 0;font-size:16px;display:flex;align-items:center;gap:8px}
+    .player{display:flex;align-items:center;gap:8px;padding:8px;border-radius:10px;background:#0f1530;border:1px solid #202a5c}
+    .player.me{outline:2px solid var(--accent)}
+    .player small{color:var(--muted)}
+    .score{font-weight:900;font-size:18px;padding:2px 8px;border-radius:10px;background:#0c1435;border:1px solid #2b3a7a}
+    .center h2{margin:6px 0 8px 0}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .col{display:flex;flex-direction:column;gap:10px}
+    .btn{border:none;border-radius:12px;padding:10px 14px;background:#1b254d;color:#e7ecff;font-weight:700;cursor:pointer;transition:.15s;border:1px solid #2b3a7a}
+    .btn:hover{transform:translateY(-1px);filter:brightness(1.05)}
+    .btn.primary{background:linear-gradient(90deg,var(--accent),#a07bff);border-color:#625ff4}
+    .btn.ghost{background:#0f1530}
+    .btn.small{padding:6px 10px;border-radius:10px;font-size:12px}
+    input,select{background:#0f1530;border:1px solid #2b3a7a;color:var(--text);padding:10px;border-radius:10px}
+    .badge{background:#0b1338;border:1px solid #2b3a7a;padding:4px 8px;border-radius:8px;color:var(--muted);font-size:12px}
+    .muted{color:var(--muted)}
+    .hr{height:1px;background:#243065;margin:8px 0}
+    .pillroom{display:inline-flex;gap:8px;align-items:center;padding:6px 10px;border-radius:999px;border:1px dashed #3b4aa0;background:#0b1338}
+    .toast{position:fixed;right:16px;bottom:16px;padding:10px 12px;border-radius:12px;background:#10183d;border:1px solid #2b3a7a;box-shadow:0 6px 24px rgba(0,0,0,.35);font-size:14px;opacity:0;transform:translateY(10px);transition:opacity .2s, transform .2s}
+    .toast.show{opacity:1;transform:translateY(0)}
+    .center{min-height:460px}
+    .hostOnly{display:none}
+    body.isHost .hostOnly{display:block}
+    .neutral{opacity:.9}
+    /* Scale */ 
+    .scaleWrap{padding:14px;border-radius:12px;background:#0e1431;border:1px solid #222f63}
+    .scale{position:relative;height:18px;border-radius:999px;background:linear-gradient(90deg,#5563ff,#67e3ff,#58d38c,#ffde3b,#ff9157,#ff5170);box-shadow:inset 0 0 0 2px rgba(255,255,255,.05)}
+    .marker{position:absolute;top:-8px;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:10px solid white;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));opacity:0;transform:translateY(-4px);transition:opacity .25s ease, transform .25s ease}
+    .marker.show{opacity:1;transform:translateY(0)}
+    .marker.red{border-bottom-color:var(--red)}
+    .marker.blue{border-bottom-color:var(--blue)}
+    .marker.reveal{border-bottom-color:white}
+    .blink{animation:blink 1s ease-in-out 1}
+    @keyframes blink{ 0%,100%{filter:saturate(1)} 50%{filter:saturate(2)} }
+    /* Reveal label animation */
+    .revealNum{font-size:28px;font-weight:900;letter-spacing:.6px;padding:8px 12px;border-radius:10px;background:#0d1a4a;border:1px dashed #3c54c7;display:inline-block;opacity:0;transform:translateY(6px);transition:opacity .35s ease, transform .35s ease}
+    .revealNum.show{opacity:1;transform:translateY(0)}
+    /* Points popup */
+    .pointsPopup{position:fixed;left:50%;top:18px;transform:translateX(-50%) translateY(-10px);padding:10px 14px;border-radius:12px;border:1px solid #2b3a7a;background:#0f1530;font-weight:800;opacity:0;transition:opacity .2s, transform .2s;z-index:40}
+    .pointsPopup.blue{box-shadow:0 0 0 2px rgba(111,107,255,.25) inset}
+    .pointsPopup.red{box-shadow:0 0 0 2px rgba(255,62,138,.25) inset}
+    .pointsPopup.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    /* Confetti */
+    .confetti{position:fixed;inset:0;pointer-events:none;z-index:30}
+    .confetti i{position:absolute;width:8px;height:12px;opacity:.9}
+    @keyframes fall { 0%{transform:translateY(-10px) rotate(0)} 100%{transform:translateY(100vh) rotate(720deg)} }
+  </style>
+  <script>
+// Robust loader for P2PT with CDN fallbacks + diagnostics
+(function(){
+  function inject(src, cb){
+    var s=document.createElement('script');
+    s.src=src; s.async=true; s.crossOrigin="anonymous";
+    s.onload=function(){ cb(null, src); };
+    s.onerror=function(){ cb(new Error('Failed to load '+src)); };
+    document.head.appendChild(s);
+  }
+  window.ensureP2PT = function(cb){
+    if(window.P2PT){ return cb(null,'already'); }
+    var cdns=[
+      'https://unpkg.com/p2pt/dist/p2pt.umd.js',
+      'https://cdn.jsdelivr.net/npm/p2pt/dist/p2pt.umd.js',
+      'https://esm.sh/p2pt?bundle'
+    ];
+    (function next(i){
+      if(i>=cdns.length){ return cb(new Error('All CDNs failed')); }
+      inject(cdns[i], function(err){
+        if(err || !window.P2PT){ console.warn('P2PT load failed from', cdns[i], err); next(i+1); }
+        else { console.log('P2PT loaded from', cdns[i]); cb(null, cdns[i]); }
+      });
+    })(0);
+  };
+})();
+</script>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="title">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l2.39 4.84 5.34.78-3.86 3.76.91 5.32L12 14.77 6.22 16.7l.91-5.32L3.27 7.62l5.34-.78L12 2z" fill="url(#g)"/><defs><linearGradient id="g" x1="0" y1="0" x2="24" y2="24"><stop stop-color="#6f6bff"/><stop offset="1" stop-color="#ff3e8a"/></linearGradient></defs></svg>
+      <span>Hotzone Party v4</span>
+      <span class="pill">Host‑Admin · Best‑of‑X · Animiert</span>
+    </div>
+    <div><div id="roomInfo" class="pillroom hidden"></div><div id="netInfo" class="tiny muted"></div></div>
+  </div>
+
+  <!-- Lobby -->
+  <div id="lobby" class="card" style="margin-bottom:12px;">
+    <div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+      <div class="col" style="min-width:260px">
+        <h3 style="margin:4px 0">Mit Freunden spielen</h3>
+        <label>Dein Name<br><input id="myName" placeholder="z.B. RapH" maxlength="18"></label>
+        <div class="row">
+          <label>Team&nbsp;
+            <select id="myTeam">
+              <option value="blue">Blau</option>
+              <option value="red">Rot</option>
+            </select>
+          </label>
+          <button class="btn" id="switchTeam" title="Team wechseln">⇄</button>
+        </div>
+        <div class="row">
+          <button class="btn primary" id="createRoom">Raum erstellen (Host)</button>
+          <div class="spacer"></div>
+          <input id="joinCode" placeholder="Raumcode" style="width:130px" maxlength="8">
+          <button class="btn" id="joinRoom">Beitreten</button>
+        </div>
+        <div class="tiny">Für Online‑Spiel <b>HTTPS</b> nutzen (GitHub Pages, Netlify, Vercel). <i>file://</i> kann P2P blocken.</div>
+      </div>
+      <div class="col" style="min-width:260px">
+        <h3 style="margin:4px 0">Schnellstart (offline)</h3>
+        <div class="row">
+          <button class="btn" id="startLocal">Lokales Spiel starten (Host)</button>
+          <span class="badge">für Discord Screenshare</span>
+        </div>
+      </div>
+      <div class="col" style="min-width:260px">
+        <h3 style="margin:4px 0">Kurzregeln</h3>
+        <ul class="tiny" style="margin:0 0 0 16px;line-height:1.4">
+          <li>Host ist neutraler Spielleiter, sieht immer die Geheimzahl.</li>
+          <li>Hinweisgeber (im Zug‑Team) bekommt Zahl ebenfalls (nur lokal).</li>
+          <li>Teams sprechen sich ab; Host trägt den Team‑Tipp per Buttons (1–10) ein.</li>
+          <li>Punkte pro Zug; nach beiden Zügen ist eine Runde fertig.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- Left: Team Blue -->
+    <div class="card team">
+      <div class="row" style="justify-content:space-between">
+        <h3>🔵 Team Blau</h3>
+        <div class="score" id="scoreBlue">0</div>
+      </div>
+      <div id="listBlue" class="list"></div>
+    </div>
+
+    <!-- Center Stage -->
+    <div class="card center">
+      <!-- Host Panel -->
+      <div class="row" style="justify-content:space-between;align-items:flex-end">
+        <div class="col">
+          <div class="badge">🎲 Spielleiter</div>
+          <div id="hostNameLbl" class="revealNum neutral">—</div>
+          <div class="row tiny">
+            <span id="matchInfo" class="pill">Match: —</span>
+            <span id="turnInfo" class="pill">Zug: —</span>
+          </div>
+        </div>
+        <div class="col hostOnly" style="align-items:flex-end;min-width:320px">
+          <div class="row">
+            <label>Best‑of‑Runden&nbsp;<input id="matchRounds" type="number" min="1" max="25" value="5" style="width:90px"></label>
+            <button class="btn primary" id="startMatch">Match starten</button>
+          </div>
+          <div class="tiny">Nur Host kann Match/Runden starten & auflösen.</div>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="row" style="justify-content:space-between">
+        <div>
+          <div class="badge">Kategorie</div>
+          <h2 id="category">—</h2>
+          <div class="row">
+            <span class="badge">Skala</span>
+            <span id="scaleLabels" class="tiny">Links: Uncool • Rechts: Cool</span>
+          </div>
+        </div>
+        <div class="col hostOnly" style="align-items:flex-end;min-width:280px">
+          <div class="row">
+            <select id="categorySel"></select>
+            <input id="catCustom" placeholder="eigene Kategorie" style="width:160px">
+          </div>
+          <div class="row">
+            <input id="leftInput" placeholder="links (z. B. Uncool)">
+            <input id="rightInput" placeholder="rechts (z. B. Cool)">
+          </div>
+          <div class="row">
+            <button class="btn small" id="applyScale">Skala setzen</button>
+            <button class="btn small ghost" id="randomCat">Zufällige Kategorie</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="scaleWrap" style="margin-top:8px">
+        <div class="row" style="justify-content:space-between;margin-bottom:6px">
+          <span id="leftLbl" class="muted">Uncool</span>
+          <span id="rightLbl" class="muted">Cool</span>
+        </div>
+        <div class="scale" id="scale">
+          <div class="marker red" id="markerRed"></div>
+          <div class="marker blue" id="markerBlue"></div>
+          <div class="marker reveal" id="markerReveal"></div>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="row" style="align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div class="col">
+          <div class="badge">Hinweis‑Wort</div>
+          <div id="hintWord" class="revealNum">—</div>
+          <div class="row"><input id="hintInput" placeholder="optional" style="width:280px"><button class="btn small ghost hostOnly" id="saveHint">Einblenden</button></div>
+        </div>
+        <div class="col hostOnly" style="min-width:320px;align-items:flex-end">
+          <div class="row">
+            <div class="badge">Geheimzahl (nur Host)</div>
+            <div id="secretNumberHost" class="revealNum">—</div>
+          </div>
+          <div class="row" id="hostTipPanel"></div>
+          <div class="row">
+            <button class="btn" id="revealBtn" disabled>Auflösen</button>
+            <button class="btn ghost" id="resetBtn">Reset</button>
+          </div>
+          <div class="tiny">Tipp eingeben → dann Auflösen. Punkte werden sofort vergeben.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Team Red -->
+    <div class="card team">
+      <div class="row" style="justify-content:space-between">
+        <h3>🔴 Team Rot</h3>
+        <div class="score" id="scoreRed">0</div>
+      </div>
+      <div id="listRed" class="list"></div>
+    </div>
+  </div>
+
+  <div class="footer muted" style="margin-top:10px">
+    Tipp: Teilt den Bildschirm im Discord‑Call. Online erfordert HTTPS. Offline‑Fallback: <b>Lokales Spiel</b>.
+  </div>
+</div>
+
+<!-- Secret modal for the Hint Giver (non-host) -->
+<div class="confetti" id="confetti"></div>
+
+<div class="overlay" id="secretOverlay" style="position:fixed;inset:0;background:rgba(4,8,20,.75);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:20">
+  <div class="card" style="width:min(520px,92vw)">
+    <h3 style="margin:0 0 8px 0">👀 Deine geheime Zahl</h3>
+    <div class="revealNum show" id="secretNumber">–</div>
+    <div class="tiny" style="margin-top:8px">Sag ein <b>einziges Wort</b> passend zur Skala.</div>
+    <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" id="closeSecret">Verstanden</button></div>
+  </div>
+</div>
+
+<div class="pointsPopup" id="pointsPopup"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== Helpers =====
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+const toast = (msg)=>{ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000) }
+const randCode = ()=> Math.random().toString(36).slice(2,6).toUpperCase();
+const deep = obj => JSON.parse(JSON.stringify(obj));
+const pointsFor = (d)=> d===0?5: d===1?3: d===2?2: d===3?1: 0;
+
+// Confetti
+function showConfetti(){
+  const root = $('#confetti'); root.innerHTML='';
+  const colors = ['#6f6bff','#a07bff','#ff3e8a','#ff8ba3','#67e3ff','#58d38c','#ffde3b'];
+  for(let i=0;i<80;i++){
+    const piece = document.createElement('i');
+    const c = colors[i % colors.length];
+    piece.style.background = c;
+    piece.style.left = Math.random()*100+'%';
+    piece.style.top = (-10 - Math.random()*30)+'px';
+    piece.style.transform = `rotate(${Math.random()*360}deg)`;
+    piece.style.animation = `fall ${2.5 + Math.random()*1.5}s linear forwards`;
+    root.appendChild(piece);
+  }
+  setTimeout(()=> root.innerHTML='', 4000);
+}
+
+// ===== State =====
+let isHost=false, online=false, localMode=false;
+let roomCode='';
+let hostName='';
+let my = { id:'me-'+Math.random().toString(36).slice(2), name:'', team:'blue', peerId:null };
+let players=[]; // non-host only
+let p2pt=null;
+
+let scores={blue:0, red:0};
+let matchRounds=5; // rounds = pair of turns (red+blue)
+let round=0; // 0..matchRounds
+let turnTeam='red'; // red -> blue -> increment round
+let idxBlue=0, idxRed=0; // rotation
+let hintGiverId=null;
+let secretNumber=null;
+let currentCategory='—';
+let scale={left:'Uncool', right:'Cool'};
+let tipCurrent=null; // number 1..10 for active team
+
+const defaultCategories = [
+  'Pokémon','Videospiele','Filme','Tiere','Obst','Fahrzeuge','Musik‑Genres','Berufe','Städte','Marken','Sportarten','Essen','Getränke','Streamer','Meme','Farben','Superhelden','Serien','Länder','Hobbys','Mythologie','Emojis','YouTube‑Kanäle'
+];
+
+// ===== Host/Client UI Modes =====
+function setHostUI(){
+  document.body.classList.toggle('isHost', !!isHost);
+  $('#hostNameLbl').textContent = isHost? (hostName?hostName:'(Host)') : (hostName?hostName:'—');
+  $('#hostNameLbl').classList.add('show');
+  ['categorySel','catCustom','leftInput','rightInput','applyScale','randomCat','startMatch','revealBtn']
+    .forEach(id=>{ const el=$( '#'+id ); if(!el) return; if(isHost||localMode) el.removeAttribute('disabled'); else el.setAttribute('disabled','disabled'); });
+  buildHostTipButtons();
+}
+
+// ===== Roster =====
+function refreshRoster(){
+  const blue = players.filter(p=>p.team==='blue');
+  const red  = players.filter(p=>p.team==='red');
+  const listBlue = blue.map(render).join('');
+  const listRed = red.map(render).join('');
+  document.getElementById('listBlue').innerHTML = listBlue;
+  document.getElementById('listRed').innerHTML = listRed;
+  function render(p){
+    const isHint = p.id===hintGiverId ? ' <small class="warning">(Hinweis)</small>' : '';
+    return `<div class="player"><div style="width:8px;height:8px;border-radius:50%;background:${p.team==='blue'?'var(--blue)':'var(--red)'}"></div><b>${escapeHtml(p.name)}</b>${isHint}<span class="spacer"></span><small class="muted">${p.id.slice(0,4)}</small></div>`;
+  }
+  updateScores();
+  updateMatchLabels();
+}
+function updateScores(){ document.getElementById('scoreBlue').textContent=scores.blue; document.getElementById('scoreRed').textContent=scores.red; }
+function updateMatchLabels(){
+  document.getElementById('matchInfo').textContent = `Match: ${round}/${matchRounds} Runden`;
+  document.getElementById('turnInfo').textContent  = `Zug: ${turnTeam==='red'?'Team Rot':'Team Blau'}`;
+}
+
+// ===== Scale / Category =====
+function applyScaleUI(){ document.getElementById('leftLbl').textContent=scale.left; document.getElementById('rightLbl').textContent=scale.right; document.getElementById('scaleLabels').textContent=`Links: ${scale.left} • Rechts: ${scale.right}`; }
+(function setupCats(){ const sel=document.getElementById('categorySel'); defaultCategories.forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o); }); sel.value='Pokémon'; })();
+document.getElementById('applyScale').addEventListener('click',()=>{
+  const L=(document.getElementById('leftInput').value||'').trim(); const R=(document.getElementById('rightInput').value||'').trim();
+  if(L) scale.left=L; if(R) scale.right=R; applyScaleUI(); if(isHost) broadcastAll();
+});
+document.getElementById('randomCat').addEventListener('click',()=>{ const list=[...defaultCategories]; const i=Math.floor(Math.random()*list.length); document.getElementById('categorySel').value=list[i]; });
+
+// ===== Lobby Actions =====
+document.getElementById('switchTeam').addEventListener('click', ()=>{ my.team = my.team==='blue'?'red':'blue'; document.getElementById('myTeam').value=my.team; });
+document.getElementById('createRoom').addEventListener('click',()=>{
+  setupNameTeam();
+  hostName = my.name;
+  isHost = true; localMode=false;
+  roomCode = randCode();
+  startP2P(roomCode);
+  toast('Raum erstellt: '+roomCode);
+  showRoomInfo();
+  document.getElementById('lobby').classList.add('hidden');
+  setHostUI();
+});
+document.getElementById('joinRoom').addEventListener('click',()=>{
+  setupNameTeam();
+  roomCode = (document.getElementById('joinCode').value||'').trim().toUpperCase(); if(!roomCode){ toast('Bitte Raumcode eingeben'); return; }
+  isHost=false; localMode=false;
+  startP2P(roomCode);
+  showRoomInfo();
+  document.getElementById('lobby').classList.add('hidden');
+  setHostUI();
+});
+document.getElementById('startLocal').addEventListener('click',()=>{
+  setupNameTeam();
+  hostName = my.name;
+  isHost=true; localMode=true; online=false; roomCode='LOCAL';
+  players=[]; 
+  document.getElementById('lobby').classList.add('hidden');
+  setHostUI(); showRoomInfo(); refreshRoster(); applyScaleUI();
+});
+
+function setupNameTeam(){ my.name = (document.getElementById('myName').value||'').trim() || 'Spieler'; my.team = document.getElementById('myTeam').value; }
+function showRoomInfo(){ const el=document.getElementById('roomInfo'); el.innerHTML=`<span class="badge">${isHost?'Host':'Spieler'}</span> <span class="muted">Raum</span> <b>${roomCode}</b>`; el.classList.remove('hidden'); }
+
+// ===== P2P =====
+function startP2P(code){
+  const trackers = ['wss://tracker.openwebtorrent.com','wss://tracker.fastcast.nz','wss://tracker.files.fm:7073/announce','wss://tracker.btorrent.xyz'];
+  ensureP2PT(function(err, src){
+    if(err || !window.P2PT){ console.error('P2P lib not available:', err); toast('P2P konnte nicht geladen werden (CDN). Nutze Offline‑Modus oder probiere später.'); return; }
+    try{
+      p2pt = new window.P2PT(trackers, 'hotzone-v4-'+code);
+    }catch(e){
+      console.error('P2PT construct error', e);
+      toast('P2P konnte nicht initialisiert werden. Prüfe HTTPS/Adblocker/Netzwerk.');
+      return;
+    }
+  p2pt.on('trackerconnect', ()=>{ online=true; toast('Verbunden. Raum '+code); const ni=document.getElementById('netInfo'); if(ni) ni.textContent='P2P online (Tracker verbunden)'; });
+  p2pt.on('peerconnect', (peer)=>{ if(isHost){ p2pt.send(peer, JSON.stringify({t:'reqHello'})); } });
+  p2pt.on('peerclose', (peer)=>{ const idx=players.findIndex(p=>p.peerId===peer.id); if(idx>-1){ players.splice(idx,1); refreshRoster(); broadcastRoster(); } });
+  p2pt.on('msg', (peer, raw)=>{
+    let msg=raw; try{ msg = typeof raw==='string'? JSON.parse(raw):raw; }catch(e){ return; }
+    if(msg.t==='reqHello'){ p2pt.send(peer, JSON.stringify({t:'hello', player:{id:my.id,name:my.name,team:my.team}})); }
+    if(msg.t==='hello'){ const p={...msg.player, peerId:peer.id}; if(!players.find(x=>x.id===p.id)){ players.push(p); refreshRoster(); } if(isHost){ broadcastRoster(); } }
+    if(msg.t==='roster' && !isHost){ players=msg.players; hostName=msg.hostName; scores=msg.scores; round=msg.round; matchRounds=msg.matchRounds; turnTeam=msg.turnTeam; hintGiverId=msg.hintGiverId; currentCategory=msg.category; scale=msg.scale; updateStateUIAfterSync(); }
+    if(msg.t==='turnStart' && !isHost){ round=msg.round; turnTeam=msg.turnTeam; hintGiverId=msg.hintGiverId; currentCategory=msg.category; scale=msg.scale; secretNumber=null; tipCurrent=null; updateStateUIAfterSync(); if(my.id===hintGiverId){ showSecretToGiver(msg.secretNumber); } }
+    if(msg.t==='hintWord'){ document.getElementById('hintWord').textContent = msg.word||'—'; document.getElementById('hintWord').classList.add('show'); }
+    if(msg.t==='tipSet'){ tipCurrent=msg.tip; showTeamMarker(turnTeam, tipCurrent, true); }
+    if(msg.t==='reveal'){ revealAll(msg.number, msg.team, msg.tip, msg.points, msg.scoresAfter); }
+    if(msg.t==='matchEnd'){ showMatchEnd(msg.winner, msg.scores); }
+  });
+  p2pt.start();
+  if(!isHost){ setTimeout(()=> broadcast({t:'hello', player:{id:my.id,name:my.name,team:my.team}}), 400); }
+  });
+}
+
+function broadcast(obj){ if(!p2pt) return; p2pt.broadcast(JSON.stringify(obj)); }
+function broadcastRoster(){ if(!isHost) return; broadcast({t:'roster', players, hostName, scores, round, matchRounds, turnTeam, hintGiverId, category:currentCategory, scale}); }
+function broadcastAll(){ broadcastRoster(); }
+
+function updateStateUIAfterSync(){
+  setHostUI(); refreshRoster(); applyScaleUI();
+  document.getElementById('category').textContent=currentCategory;
+  document.getElementById('hintWord').classList.add('show');
+  ['markerRed','markerBlue','markerReveal'].forEach(id=>{ const el=document.getElementById(id); el.classList.remove('show'); });
+}
+
+// ===== Turn / Match Flow =====
+document.getElementById('startMatch').addEventListener('click',()=>{
+  if(!isHost && !localMode){ toast('Nur Host kann das Match starten'); return; }
+  matchRounds = Math.max(1, Math.min(25, parseInt(document.getElementById('matchRounds').value||'5',10)));
+  scores={blue:0, red:0}; round=1; turnTeam='red'; idxBlue=0; idxRed=0; hintGiverId=null; tipCurrent=null; secretNumber=null;
+  document.getElementById('hintWord').textContent='—'; document.getElementById('hintWord').classList.remove('show');
+  startTurn();
+});
+
+function startTurn(){
+  const teamPlayers = players.filter(p=>p.team===turnTeam);
+  if(teamPlayers.length===0){ toast('Keine Spieler im '+(turnTeam==='red'?'roten':'blauen')+' Team.'); return; }
+  if(turnTeam==='red'){ hintGiverId = teamPlayers[idxRed % teamPlayers.length].id; idxRed++; }
+  else { hintGiverId = teamPlayers[idxBlue % teamPlayers.length].id; idxBlue++; }
+  const custom = (document.getElementById('catCustom')?.value||'').trim();
+  currentCategory = custom || document.getElementById('categorySel')?.value || defaultCategories[Math.floor(Math.random()*defaultCategories.length)];
+  document.getElementById('category').textContent=currentCategory;
+  secretNumber = Math.floor(Math.random()*10)+1;
+  tipCurrent = null;
+  document.getElementById('secretNumberHost').textContent = secretNumber;
+  document.getElementById('secretNumberHost').classList.add('show');
+  document.getElementById('hintWord').textContent='—'; document.getElementById('hintWord').classList.remove('show');
+  setRevealEnabled(false);
+  buildHostTipButtons();
+  clearMarkers();
+  refreshRoster(); applyScaleUI(); updateMatchLabels();
+  if(isHost && !localMode){
+    broadcast({t:'turnStart', round, turnTeam, hintGiverId, category:currentCategory, scale, secretNumber});
+  }
+  if(!isHost && my.id===hintGiverId){ showSecretToGiver(secretNumber); }
+}
+
+function setRevealEnabled(ok){ const b=document.getElementById('revealBtn'); if(ok){ b.removeAttribute('disabled'); } else { b.setAttribute('disabled','disabled'); } }
+function clearMarkers(){ ['markerRed','markerBlue','markerReveal'].forEach(id=>{ const el=document.getElementById(id); el.classList.remove('show'); }); }
+
+function buildHostTipButtons(){
+  const p = document.getElementById('hostTipPanel'); if(!p) return;
+  p.innerHTML='';
+  if(!(isHost||localMode)) return;
+  const teamLabel = turnTeam==='red' ? 'Team Rot Tipp:' : 'Team Blau Tipp:';
+  const label = document.createElement('div'); label.className='badge'; label.textContent = teamLabel; p.appendChild(label);
+  for(let n=1;n<=10;n++){ const b=document.createElement('button'); b.className='btn'; b.textContent=n; b.onclick=()=> setTeamTip(n); p.appendChild(b); }
+}
+
+function setTeamTip(n){
+  tipCurrent = n;
+  showTeamMarker(turnTeam, n, true);
+  setRevealEnabled(true);
+  if(isHost && !localMode){ broadcast({t:'tipSet', tip:n}); }
+}
+
+function showTeamMarker(team, value, blink){
+  const el = team==='red'? document.getElementById('markerRed'): document.getElementById('markerBlue');
+  const pct = (value-1)/9;
+  el.style.left = `calc(${pct*100}% )`;
+  el.classList.add('show');
+  if(blink){ el.classList.add('blink'); setTimeout(()=> el.classList.remove('blink'), 900); }
+}
+
+document.getElementById('saveHint').addEventListener('click',()=>{
+  const w = (document.getElementById('hintInput').value||'').trim(); document.getElementById('hintWord').textContent = w||'—'; document.getElementById('hintWord').classList.add('show');
+  if(isHost && !localMode) broadcast({t:'hintWord', word:w});
+});
+
+document.getElementById('revealBtn').addEventListener('click',()=>{
+  if(!isHost && !localMode){ toast('Nur Host kann auflösen'); return; }
+  if(!tipCurrent){ toast('Bitte zuerst Team‑Tipp setzen'); return; }
+  const d = Math.abs(tipCurrent - secretNumber);
+  const pts = pointsFor(d);
+  if(turnTeam==='red'){ scores.red += pts; } else { scores.blue += pts; }
+  const m = document.getElementById('markerReveal'); const pct=(secretNumber-1)/9; m.style.left=`calc(${pct*100}% )`; m.classList.add('show');
+  pointsPopup(turnTeam, pts);
+  updateScores();
+  if(isHost && !localMode){ broadcast({t:'reveal', number:secretNumber, team:turnTeam, tip:tipCurrent, points:pts, scoresAfter:deep(scores)}); }
+  setTimeout(()=> endTurn(), 500);
+});
+
+function revealAll(number, team, tip, pts, scoresAfter){
+  const el = document.getElementById('markerReveal'); const pct=(number-1)/9; el.style.left=`calc(${pct*100}% )`; el.classList.add('show');
+  showTeamMarker(team, tip, true);
+  pointsPopup(team, pts);
+  scores = scoresAfter; updateScores();
+}
+
+function endTurn(){
+  if(turnTeam==='red'){ turnTeam='blue'; }
+  else { turnTeam='red'; round += 1; }
+  if(round>matchRounds){
+    const winner = scores.blue>scores.red? 'blue' : scores.red>scores.blue? 'red' : 'draw';
+    if(isHost && !localMode){ broadcast({t:'matchEnd', winner, scores}); }
+    showMatchEnd(winner, scores);
+    return;
+  }
+  startTurn();
+}
+
+function showMatchEnd(winner, scoresNow){
+  let text=''; 
+  if(winner==='blue') text='🏆 Team Blau gewinnt!';
+  else if(winner==='red') text='🏆 Team Rot gewinnt!';
+  else text='🤝 Unentschieden';
+  const popup = document.createElement('div');
+  popup.className='pointsPopup show';
+  popup.style.padding='14px 18px';
+  popup.style.fontSize='18px';
+  popup.textContent = text + `   (Blau ${scoresNow.blue} : ${scoresNow.red} Rot)`;
+  document.body.appendChild(popup);
+  showConfetti();
+  setTimeout(()=> popup.classList.remove('show'), 2500);
+}
+
+function pointsPopup(team, pts){
+  const pp = document.getElementById('pointsPopup');
+  pp.className = 'pointsPopup ' + (team==='red'?'red':'blue');
+  const teamText = team==='red'?'Team Rot':'Team Blau';
+  pp.textContent = `${teamText} +${pts} Punkt${pts===1?'':'e'}`;
+  pp.classList.add('show');
+  setTimeout(()=> pp.classList.remove('show'), 1800);
+}
+
+function showSecretToGiver(n){ document.getElementById('secretOverlay').style.display='flex'; document.getElementById('secretNumber').textContent=n; }
+document.getElementById('closeSecret').addEventListener('click',()=> document.getElementById('secretOverlay').style.display='none');
+
+function escapeHtml(s){ return s.replace(/[&<>"]+/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+
+(function init(){
+  applyScaleUI(); refreshRoster(); updateMatchLabels();
+  setHostUI();
+})();
+</script>
+</body>
+</html>
